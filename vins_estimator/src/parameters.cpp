@@ -16,12 +16,15 @@ double SOLVER_TIME;
 int NUM_ITERATIONS;
 int ESTIMATE_EXTRINSIC;
 int ESTIMATE_TD;
+int ESTIMATE_TD2;
 int ROLLING_SHUTTER;
 std::string EX_CALIB_RESULT_PATH;
 std::string VINS_RESULT_PATH;
+std::string TD_RESULT_PATH;
 std::string IMU_TOPIC;
 double ROW, COL;
 double TD, TR;
+double td_perturbation;
 
 template <typename T>
 T readParam(ros::NodeHandle &n, std::string name)
@@ -60,6 +63,11 @@ void readParameters(ros::NodeHandle &n)
     fsSettings["output_path"] >> OUTPUT_PATH;
     VINS_RESULT_PATH = OUTPUT_PATH + "/vins_result_no_loop.csv";
     std::cout << "result path " << VINS_RESULT_PATH << std::endl;
+
+    TD_RESULT_PATH = OUTPUT_PATH + "/td_no_loop.csv";
+    std::cout << "save estimated td: " << TD_RESULT_PATH << std::endl;
+    std::ofstream foutTd(TD_RESULT_PATH, std::ios::out);
+    foutTd.close();
 
     // create folder if not exists
     FileSystemHelper::createDirectoryIfNotExists(OUTPUT_PATH.c_str());
@@ -122,6 +130,14 @@ void readParameters(ros::NodeHandle &n)
     else
         ROS_INFO_STREAM("Synchronized sensors, fix time offset: " << TD);
 
+    td_perturbation = fsSettings["td_perturbation"];
+
+    ROS_INFO_STREAM("td_perturbation: " << td_perturbation);
+    
+    ESTIMATE_TD2 = fsSettings["estimate_td2"];
+
+    ROS_INFO_STREAM("ESTIMATE_TD2: " << ESTIMATE_TD2);
+    
     ROLLING_SHUTTER = fsSettings["rolling_shutter"];
     if (ROLLING_SHUTTER)
     {

@@ -61,14 +61,21 @@ class IntegrationBase
     {
         //ROS_INFO("midpoint integration");
         Vector3d un_acc_0 = delta_q * (_acc_0 - linearized_ba);
-        Vector3d un_gyr = 0.5 * (_gyr_0 + _gyr_1) - linearized_bg;
+        un_gyr = 0.5 * (_gyr_0 + _gyr_1) - linearized_bg;
         result_delta_q = delta_q * Quaterniond(1, un_gyr(0) * _dt / 2, un_gyr(1) * _dt / 2, un_gyr(2) * _dt / 2);
         Vector3d un_acc_1 = result_delta_q * (_acc_1 - linearized_ba);
-        Vector3d un_acc = 0.5 * (un_acc_0 + un_acc_1);
+        un_acc = 0.5 * (un_acc_0 + un_acc_1);
         result_delta_p = delta_p + delta_v * _dt + 0.5 * un_acc * _dt * _dt;
         result_delta_v = delta_v + un_acc * _dt;
         result_linearized_ba = linearized_ba;
         result_linearized_bg = linearized_bg;         
+
+        if(!front_imu) 
+        {
+            front_un_acc = un_acc;
+            front_un_gyr = un_gyr;
+            front_imu = true;
+        }
 
         if(update_jacobian)
         {
@@ -189,6 +196,14 @@ class IntegrationBase
     Eigen::Vector3d acc_0, gyr_0;
     Eigen::Vector3d acc_1, gyr_1;
 
+    Eigen::Vector3d un_gyr;
+    Eigen::Vector3d un_acc;
+
+    bool front_imu = false;
+
+    Eigen::Vector3d front_un_gyr;
+    Eigen::Vector3d front_un_acc;
+    
     const Eigen::Vector3d linearized_acc, linearized_gyr;
     Eigen::Vector3d linearized_ba, linearized_bg;
 

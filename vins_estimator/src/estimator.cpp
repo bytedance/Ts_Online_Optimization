@@ -16,6 +16,7 @@ void Estimator::setParameter()
     f_manager.setRic(ric);
     ProjectionFactor::sqrt_info = FOCAL_LENGTH / 1.5 * Matrix2d::Identity();
     ProjectionTdFactor::sqrt_info = FOCAL_LENGTH / 1.5 * Matrix2d::Identity();
+    ProjectionTd2Factor::sqrt_info = FOCAL_LENGTH / 1.5 * Matrix2d::Identity();
     td = TD;
 }
 
@@ -171,7 +172,7 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
                 solveOdometry();
                 slideWindow();
                 f_manager.removeFailures();
-                ROS_INFO("Initialization finish!");
+                ROS_INFO("Initialization finish! td: %f", td);
                 last_R = Rs[WINDOW_SIZE];
                 last_P = Ps[WINDOW_SIZE];
                 last_R0 = Rs[0];
@@ -523,7 +524,7 @@ void Estimator::vector2double()
     VectorXd dep = f_manager.getDepthVector();
     for (int i = 0; i < f_manager.getFeatureCount(); i++)
         para_Feature[i][0] = dep(i);
-    if (ESTIMATE_TD)
+    if (ESTIMATE_TD || ESTIMATE_TD2)
         para_Td[0][0] = td;
 }
 
@@ -591,7 +592,7 @@ void Estimator::double2vector()
     for (int i = 0; i < f_manager.getFeatureCount(); i++)
         dep(i) = para_Feature[i][0];
     f_manager.setDepth(dep);
-    if (ESTIMATE_TD)
+    if (ESTIMATE_TD || ESTIMATE_TD2)
         td = para_Td[0][0];
 
     // relative info between two loop frame
@@ -691,7 +692,7 @@ void Estimator::optimization()
         else
             ROS_DEBUG("estimate extinsic param");
     }
-    if (ESTIMATE_TD)
+    if (ESTIMATE_TD || ESTIMATE_TD2)
     {
         problem.AddParameterBlock(para_Td[0], 1);
         //problem.SetParameterBlockConstant(para_Td[0]);
@@ -753,6 +754,38 @@ void Estimator::optimization()
                     para[4] = para_Td[0];
                     f_td->check(para);
                     */
+            } 
+            else if(ESTIMATE_TD2)
+            {
+                    Eigen::Vector3d Vi(para_SpeedBias[imu_i][0], para_SpeedBias[imu_i][1], para_SpeedBias[imu_i][2]);
+                    Eigen::Vector3d Vj(para_SpeedBias[imu_j][0], para_SpeedBias[imu_j][1], para_SpeedBias[imu_j][2]);
+                    Eigen::Vector3d gyr_i = Eigen::Vector3d::Zero();
+                    Eigen::Vector3d gyr_j = Eigen::Vector3d::Zero();
+                    if(pre_integrations[imu_i] && pre_integrations[imu_i]->front_imu) {
+                        gyr_i = pre_integrations[imu_i]->un_gyr;
+                    }
+                    else if(pre_integrations[imu_i + 1] && pre_integrations[imu_i + 1]->front_imu) {
+                        gyr_i = pre_integrations[imu_i + 1]->front_un_gyr;
+                    }
+                    else
+                    {
+                        ROS_ERROR_STREAM("pre_integrations[imu_i] is invalid or valid flag is false");
+                        ROS_ERROR_STREAM("pre_integrations[imu_i]: " << pre_integrations[imu_i]);
+                        ROS_ERROR_STREAM("pre_integrations[imu_i]->front_imu: " << (int)pre_integrations[imu_i]->front_imu);
+                    }
+
+                    if(pre_integrations[imu_j] && pre_integrations[imu_j]->front_imu) {
+                        gyr_j = pre_integrations[imu_j]->un_gyr;
+                    }
+                    else
+                    {
+                        ROS_ERROR_STREAM("pre_integrations[imu_j] is invalid");
+                    }
+                    ProjectionTd2Factor *f_td = new ProjectionTd2Factor(pts_i, pts_j,
+                                                                        it_per_id.feature_per_frame[0].cur_td, it_per_frame.cur_td,
+                                                                        Vi, Vj,
+                                                                        gyr_i, gyr_j);
+                    problem.AddResidualBlock(f_td, loss_function, para_Pose[imu_i], para_Pose[imu_j], para_Ex_Pose[0], para_Feature[feature_index], para_Td[0]);
             }
             else
             {
@@ -890,6 +923,43 @@ void Estimator::optimization()
                                                                                         vector<int>{0, 3});
                         marginalization_info->addResidualBlockInfo(residual_block_info);
                     }
+                    else if(ESTIMATE_TD2)
+                    {
+                            Eigen::Vector3d Vi(para_SpeedBias[0][0], para_SpeedBias[0][1], para_SpeedBias[0][2]);
+                            Eigen::Vector3d Vj(para_SpeedBias[imu_j][0], para_SpeedBias[imu_j][1], para_SpeedBias[imu_j][2]);
+                            Eigen::Vector3d gyr_i = Eigen::Vector3d::Zero();
+                            Eigen::Vector3d gyr_j = Eigen::Vector3d::Zero();
+                            if(pre_integrations[0] && pre_integrations[0]->front_imu) {
+                                gyr_i = pre_integrations[0]->un_gyr;
+                            }
+                            else if(pre_integrations[1] && pre_integrations[1]->front_imu)
+                            {
+                                gyr_i = pre_integrations[1]->front_un_gyr;
+                            }
+                            else
+                            {
+                                ROS_ERROR_STREAM("pre_integrations[0] is invalid or valid flag is false");
+                                ROS_ERROR_STREAM("pre_integrations[0]: " << pre_integrations[0]);
+                                ROS_ERROR_STREAM("pre_integrations[0]->front_imu: " << (int)pre_integrations[0]->front_imu);
+                            }
+
+                            if(pre_integrations[imu_j] && pre_integrations[imu_j]->front_imu) {
+                                gyr_j = pre_integrations[imu_j]->un_gyr;
+                            }
+                            else
+                            {
+                                ROS_ERROR_STREAM("pre_integrations[imu_j] is invalid");
+                            }
+
+                            ProjectionTd2Factor *f_td = new ProjectionTd2Factor(pts_i, pts_j,
+                                                                                it_per_id.feature_per_frame[0].cur_td, it_per_frame.cur_td,
+                                                                                Vi, Vj,
+                                                                                gyr_i, gyr_j);
+                        ResidualBlockInfo *residual_block_info = new ResidualBlockInfo(f_td, loss_function,
+                                                                                        vector<double *>{para_Pose[imu_i], para_Pose[imu_j], para_Ex_Pose[0], para_Feature[feature_index], para_Td[0]},
+                                                                                        vector<int>{0, 3});
+                        marginalization_info->addResidualBlockInfo(residual_block_info);
+                    }
                     else
                     {
                         ProjectionFactor *f = new ProjectionFactor(pts_i, pts_j);
@@ -918,7 +988,7 @@ void Estimator::optimization()
         }
         for (int i = 0; i < NUM_OF_CAM; i++)
             addr_shift[reinterpret_cast<long>(para_Ex_Pose[i])] = para_Ex_Pose[i];
-        if (ESTIMATE_TD)
+        if (ESTIMATE_TD || ESTIMATE_TD2)
         {
             addr_shift[reinterpret_cast<long>(para_Td[0])] = para_Td[0];
         }
@@ -984,7 +1054,7 @@ void Estimator::optimization()
             }
             for (int i = 0; i < NUM_OF_CAM; i++)
                 addr_shift[reinterpret_cast<long>(para_Ex_Pose[i])] = para_Ex_Pose[i];
-            if (ESTIMATE_TD)
+            if (ESTIMATE_TD || ESTIMATE_TD2)
             {
                 addr_shift[reinterpret_cast<long>(para_Td[0])] = para_Td[0];
             }
@@ -1000,6 +1070,7 @@ void Estimator::optimization()
     ROS_DEBUG("whole marginalization costs: %f", t_whole_marginalization.toc());
     
     ROS_DEBUG("whole time for ceres: %f", t_whole.toc());
+    ROS_INFO("optimization end. td is: %f", td);
 }
 
 void Estimator::slideWindow()

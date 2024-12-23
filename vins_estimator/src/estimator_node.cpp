@@ -105,14 +105,14 @@ getMeasurements()
         if (imu_buf.empty() || feature_buf.empty())
             return measurements;
 
-        if (!(imu_buf.back()->header.stamp.toSec() > feature_buf.front()->header.stamp.toSec() + estimator.td))
+        if (!(imu_buf.back()->header.stamp.toSec() > feature_buf.front()->header.stamp.toSec() + estimator.td + td_perturbation))
         {
             //ROS_WARN("wait for imu, only should happen at the beginning");
             sum_of_wait++;
             return measurements;
         }
 
-        if (!(imu_buf.front()->header.stamp.toSec() < feature_buf.front()->header.stamp.toSec() + estimator.td))
+        if (!(imu_buf.front()->header.stamp.toSec() < feature_buf.front()->header.stamp.toSec() + estimator.td + td_perturbation))
         {
             ROS_WARN("throw img, only should happen at the beginning");
             feature_buf.pop();
@@ -122,7 +122,7 @@ getMeasurements()
         feature_buf.pop();
 
         std::vector<sensor_msgs::ImuConstPtr> IMUs;
-        while (imu_buf.front()->header.stamp.toSec() < img_msg->header.stamp.toSec() + estimator.td)
+        while (imu_buf.front()->header.stamp.toSec() < img_msg->header.stamp.toSec() + estimator.td + td_perturbation)
         {
             IMUs.emplace_back(imu_buf.front());
             imu_buf.pop();
@@ -225,7 +225,7 @@ void process()
             for (auto &imu_msg : measurement.first)
             {
                 double t = imu_msg->header.stamp.toSec();
-                double img_t = img_msg->header.stamp.toSec() + estimator.td;
+                double img_t = img_msg->header.stamp.toSec() + estimator.td + td_perturbation;
                 if (t <= img_t)
                 { 
                     if (current_time < 0)

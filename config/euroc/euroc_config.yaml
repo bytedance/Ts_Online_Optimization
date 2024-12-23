@@ -70,8 +70,9 @@ pose_graph_save_path: "/home/shaozu/output/pose_graph/" # save and load path
 
 #unsynchronization parameters
 estimate_td: 0                      # online estimate time offset between camera and imu
+estimate_td2: 1                     # open the proposed time offset optimization between camera and imu
 td: 0.0                             # initial value of time offset. unit: s. readed image clock + td = real image clock (IMU clock)
-
+td_perturbation: 0.000               # set the misaligned time offset.
 #rolling shutter parameters
 rolling_shutter: 0                  # 0: global shutter camera, 1: rolling shutter camera
 rolling_shutter_tr: 0               # unit: s. rolling shutter read out time per frame (from data sheet). 

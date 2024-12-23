@@ -41,6 +41,7 @@ add_executable(vins_estimator
     src/factor/pose_local_parameterization.cpp
     src/factor/projection_factor.cpp
     src/factor/projection_td_factor.cpp
+    src/factor/projection_td2_factor.cpp
     src/factor/marginalization_factor.cpp
     src/utility/utility.cpp
     src/utility/visualization.cpp

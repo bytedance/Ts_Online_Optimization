@@ -99,7 +99,7 @@ void printStatistics(const Estimator &estimator, double t)
     sum_of_path += (estimator.Ps[WINDOW_SIZE] - last_path).norm();
     last_path = estimator.Ps[WINDOW_SIZE];
     ROS_DEBUG("sum of path %f", sum_of_path);
-    if (ESTIMATE_TD)
+    if (ESTIMATE_TD || ESTIMATE_TD2)
         ROS_INFO("td %f", estimator.td);
 }
 
@@ -170,6 +170,14 @@ void pubOdometry(const Estimator &estimator, const std_msgs::Header &header)
               << estimator.Vs[WINDOW_SIZE].y() << ","
               << estimator.Vs[WINDOW_SIZE].z() << "," << endl;
         foutC.close();
+
+        ofstream foutTd(TD_RESULT_PATH, ios::app);
+        foutTd.setf(ios::fixed, ios::floatfield);
+        foutTd.precision(6);
+        foutTd << header.stamp.toSec() << " ";
+        // foutTd.precision(6);
+        foutTd << estimator.td * 1e3 << endl;
+        foutTd.close();
     }
 }
 
