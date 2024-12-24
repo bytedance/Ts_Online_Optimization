@@ -1,3 +1,14 @@
+/*
+This file is originally from https://github.com/HKUST-Aerial-Robotics/VINS-Mono
+SPDX-License-Identifier: GPL-3.0 license
+
+This file may have been modified by ByteDance Ltd. and/or its affiliates on 2024.12.23
+
+Original file was released under [ GPL-3.0 license], with the full license text
+available at [https://github.com/HKUST-Aerial-Robotics/VINS-Mono/blob/master/LICENCE].
+
+This modified file is released under the same license.
+*/
 #include "visualization.h"
 
 using namespace ros;

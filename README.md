@@ -13,7 +13,7 @@ The code is licensed under GPLv3.
 The Experimental code is developed on VINS-Mono(**[VINS-Mono](https://github.com/HKUST-Aerial-Robotics/VINS-Mono)**), and thus its license is retained at the beginning of the related files.
 
 **Related Publication:**  
-The related PrePrint is released soon.
+The related PrePrint will be released soon.
 
 # 2. Prerequisites
 1.1 **Ubuntu** and **ROS**
