@@ -63,7 +63,14 @@ The Experimental code is developed on [VINS-Mono](https://github.com/HKUST-Aeria
 
 
 # 7. Citation
-TBD
+```bibtex
+@article{fan2025universal,
+  title={Universal Online Temporal Calibration for Optimization-based Visual-Inertial Navigation Systems},
+  author={Fan, Yunfei and Zhao, Tianyu and Guo, Linan and Chen, Chen and Wang, Xin and Zhou, Fengyi},
+  journal={arXiv preprint arXiv:2501.01788},
+  year={2025}
+}
+```
 
 # 8. We are Hiring!
 Our team is hiring FTEs with background in Deep Learning, SLAM, and 3D Vision. We are based in Beijing and Shanghai. If you are interested, please send your resume to frank.01[AT]bytedance[DOT]com.
